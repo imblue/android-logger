@@ -3,6 +3,9 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
+apply plugin: 'maven'
+apply plugin: 'signing'
+
 android {
     compileSdkVersion 27
     defaultConfig {
@@ -21,4 +24,88 @@ android {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+}
+
+
+task javadoc(type: Javadoc) {
+    failOnError false
+    source = android.sourceSets.main.java.sourceFiles
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    classpath += configurations.compile
+}
+
+
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+
+
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+
+    include("**/ICatapush.java")
+}
+
+
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+group = "com.github.imblue"
+archivesBaseName = "android-logger"
+version = "1.0.0"
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                name 'Android Logger'
+                packaging 'aar'
+                artifactId 'android-logger'
+                description 'Simple logger for Android in Kotlin'
+                url 'https://github.com/imblue/android-logger'
+
+                scm {
+                    connection 'scm:git:https://github.com/imblue/android-logger.git'
+                    developerConnection 'scm:git:https://github.com/imblue/android-logger.git'
+                    url 'https://github.com/imblue/android-logger'
+                }
+
+                licenses {
+                    license {
+                        name 'MIT License'
+                        url 'https://github.com/imblue/android-logger/blob/master/LICENSE'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'imblue'
+                        name 'Christian Schuhmacher'
+                        email 'cschuhmacher1995@gmail.com'
+                    }
+                }
+            }
+        }
+    }
 }
